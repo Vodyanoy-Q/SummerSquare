@@ -46,9 +46,9 @@ struct test_Data
 
 };
 
-int Equation_Solver(s_coef coef_, double * x_1, double * x_2);
+int Equation_Solver(s_coef coef_, s_roots * roots_);
 int Double_Comparison(double number);
-int Quadratic_Solver(s_coef coef_, double * x_1, double * x_2);
+int Quadratic_Solver(s_coef coef_, s_roots * roots_);
 int Linear_Solver(double b, double c, double * x_1);
 void Start_Input();
 void Choice(int enter);
@@ -125,22 +125,28 @@ void Go_Solve()
 
     scanf("%lg %lg %lg", &coef.a, &coef.b, &coef.c);        // TODO check input coef
 
-    int roots = Equation_Solver(coef, &s_roots.x_1, &s_roots.x_2);
+    int roots = Equation_Solver(coef, &s_roots);
 
     Print_Answer(roots, s_roots.x_1, s_roots.x_2);
 
 }
 //========================================================================================================================================================================
 
-int Equation_Solver(s_coef coef_, double * x_1, double * x_2)
+int Equation_Solver(s_coef coef_, s_roots * roots_)
 {
     if (Double_Comparison(coef_.a))
     {
-        return Linear_Solver(coef_.b, coef_.c, &*x_1);
+        return Linear_Solver(coef_.b, coef_.c, &(roots_->x_1));
+    }
+    else if (Double_Comparison(coef_.c))
+    {
+        roots_ -> x_1 = 0;
+        roots_ -> x_2 = -coef_.b/coef_.a;
+        return TWO_ROOTS;
     }
     else
     {
-        return Quadratic_Solver(coef_, &*x_1, &*x_2);
+        return Quadratic_Solver(coef_, &*roots_);
     }
 
     return 0;
@@ -169,7 +175,7 @@ int Linear_Solver(double b, double c, double * x_1)
 
 // TODO c == 0
 
-int Quadratic_Solver(s_coef coef_, double * x_1, double * x_2)
+int Quadratic_Solver(s_coef coef_, s_roots * roots_)
 {
     double Discriminant = coef_.b*coef_.b - 4*coef_.a*coef_.c;
 
@@ -179,13 +185,13 @@ int Quadratic_Solver(s_coef coef_, double * x_1, double * x_2)
     }
     else if (Double_Comparison(Discriminant))
     {
-        * x_1 = -coef_.b / (2 * coef_.a);
+        roots_ -> x_1 = -coef_.b / (2 * coef_.a);
         return ONE_ROOT;
     }
     else
     {
-        *x_1 = (-coef_.b + sqrt(Discriminant)) / (2 * coef_.a);
-        *x_2 = (-coef_.b - sqrt(Discriminant)) / (2 * coef_.a);
+        roots_ -> x_1 = (-coef_.b + sqrt(Discriminant)) / (2 * coef_.a);
+        roots_ -> x_2 = (-coef_.b - sqrt(Discriminant)) / (2 * coef_.a);
         return TWO_ROOTS;
     }
     return 0;
@@ -229,7 +235,7 @@ void Print_Answer(int roots, double x_1, double x_2)
               // function for one concrete test, other func call
 void Structure_Tests()
 {
-    const int n_test = 9;
+    const int n_test = 10;
     struct test_Data test_[n_test] = {{{ 0,   0,   0},    {NAN,  NAN},  {1, -1}},
                                      {{  0,   0,   1},    {NAN,  NAN},  {2,  0}},
                                      {{  1,   2,  -3},    {  1,   -3},  {3,  2}},
@@ -238,14 +244,15 @@ void Structure_Tests()
                                      {{  2,   4,   2},    { -1,  NAN},  {6,  1}},
                                      {{  5,   1,  -4},    {0.8,   -1},  {7,  2}},
                                      {{0.5,   1,  -4},    {  2,   -4},  {8,  2}},
-                                     {{ 10,   9,  -1},    {0.1,   -1},  {9,  2}}};
+                                     {{1.5,   9,   0},    {  0,   -6},  {9,  2}},
+                                     {{ 10,   9,  -1},    {0.1,   -1},  {10,  2}}};
     int count = 0;
 
-    for(int i = 0; i < 9; i++)
+    for(int i = 0; i < n_test; i++)
     {
         struct s_roots start_roots = {NAN, NAN};
 
-        int roots = Equation_Solver(test_[i].c_data, &start_roots.x_1, &start_roots.x_2);
+        int roots = Equation_Solver(test_[i].c_data, &start_roots);
 
         if (
             (Double_Comparison(start_roots.x_1 - test_[i].r_data.x_1) == 1 || (isnan(start_roots.x_1) && isnan(test_[i].r_data.x_1)))&&
