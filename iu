@@ -1,0 +1,282 @@
+#include <stdio.h>
+#include <math.h>
+
+// read about assert
+// TODO struct coef and roots
+
+const double delta = 1e-6;
+
+enum n_roots
+{
+    INFINITE_ROOTS = -1,
+    NO_ROOTS = 0,
+    ONE_ROOT = 1,
+    TWO_ROOTS = 2
+};
+enum enter_variety
+{
+    E_TEST = 't',
+    E_SOLVER = 's',
+    E_QUIT = 'q'
+};
+
+struct s_coef
+{
+    double a;
+    double b;
+    double c;
+};
+struct for_test
+{
+    int n_test;
+    int roots_Right;
+};
+
+struct s_roots
+{
+    double x_1;
+    double x_2;
+};
+
+struct test_Data
+{
+    s_coef c_data;
+    s_roots r_data;
+    for_test n_data;
+
+};
+
+int Equation_Solver(s_coef coef_, double * x_1, double * x_2);
+int Double_Comparison(double number);
+int Quadratic_Solver(s_coef coef_, double * x_1, double * x_2);
+int Linear_Solver(double b, double c, double * x_1);
+void Start_Input();
+void Choice(int enter);
+void Go_Solve();
+void Print_Answer(int roots, double x_1, double x_2);
+void Input_Checker(double * a, double * b, double * c);
+void Structure_Tests();
+void Checker();
+void Buffer_Clear();
+
+int main()
+{
+    printf("WELCOME TO MY SOLVER FOR QUADRATIC(ax^2+bx+c=0) EQUATIONS\n");
+
+    Start_Input();
+
+    return 0;
+}
+
+//========================================================================================================================================================================
+
+// TODO getmode()
+
+void Start_Input()
+{
+    int enter = 0;
+    while (enter != 'q' && enter != 's' && enter != 't')
+    {
+        printf("PRESS t TO DO AUTO TESTS OR s TO ENTER a b c OR q TO QUIT\n");
+        enter = getchar();
+        if (getchar() != '\n')
+        {
+            printf("!!!ERROR!!!\nTRY AGAIN\n");
+            Buffer_Clear();
+            enter = 0;
+        }
+        else
+        {
+            Choice(enter);
+        }
+    }
+}
+
+void Choice(int enter)
+{
+    switch(enter)
+    {
+        case E_TEST:
+        {
+            Structure_Tests();
+            break;
+        }
+        case E_QUIT:
+        {
+            break;
+        }
+        case E_SOLVER:
+        {
+            Go_Solve();
+            break;
+        }
+        default:
+        {
+            printf("!!!ERROR!!!\nTRY AGAIN\n");
+        }
+    }
+}
+void Go_Solve()
+{
+    struct s_coef coef = {0, 0, 0};
+    struct s_roots s_roots = {NAN, NAN};
+
+    printf("ENTER a b c\n");
+
+    scanf("%lg %lg %lg", &coef.a, &coef.b, &coef.c);        // TODO check input coef
+
+    int roots = Equation_Solver(coef, &s_roots.x_1, &s_roots.x_2);
+
+    Print_Answer(roots, s_roots.x_1, s_roots.x_2);
+
+}
+//========================================================================================================================================================================
+
+int Equation_Solver(s_coef coef_, double * x_1, double * x_2)
+{
+    if (Double_Comparison(coef_.a))
+    {
+        return Linear_Solver(coef_.b, coef_.c, &*x_1);
+    }
+    else
+    {
+        return Quadratic_Solver(coef_, &*x_1, &*x_2);
+    }
+
+    return 0;
+}
+
+int Linear_Solver(double b, double c, double * x_1)
+{
+    if (Double_Comparison(b))
+    {
+        if (Double_Comparison(c))
+        {
+            return INFINITE_ROOTS;
+        }
+        else
+        {
+            return NO_ROOTS;
+        }
+    }
+    else
+    {
+        *x_1 = -c / b;
+        return ONE_ROOT;
+    }
+    return 0;
+}
+
+// TODO c == 0
+
+int Quadratic_Solver(s_coef coef_, double * x_1, double * x_2)
+{
+    double Discriminant = coef_.b*coef_.b - 4*coef_.a*coef_.c;
+
+    if (Discriminant < -delta)
+    {
+        return NO_ROOTS;
+    }
+    else if (Double_Comparison(Discriminant))
+    {
+        * x_1 = -coef_.b / (2 * coef_.a);
+        return ONE_ROOT;
+    }
+    else
+    {
+        *x_1 = (-coef_.b + sqrt(Discriminant)) / (2 * coef_.a);
+        *x_2 = (-coef_.b - sqrt(Discriminant)) / (2 * coef_.a);
+        return TWO_ROOTS;
+    }
+    return 0;
+}
+
+//==============================================================================================================================================================================
+
+// rename func name
+
+void Print_Answer(int roots, double x_1, double x_2)
+{
+    switch(roots)
+    {
+        case NO_ROOTS:
+        {
+            printf("NO ROOTS");
+            break;
+        }
+        case ONE_ROOT:
+        {
+            printf("ONE ROOT. ROOT %lg", x_1);
+            break;
+        }
+        case TWO_ROOTS:
+        {
+            printf("TWO ROOTS. FIRST ROOT %lg, SECOND ROOT %lg", x_1, x_2);
+            break;
+        }
+        case INFINITE_ROOTS:
+        {
+            printf("AN INFINITE NUMBER OF ROOTS");
+            break;
+        }
+        default:
+        {
+            printf("ERROR!!! UNKNOWN NUMBER OF ROOTS");
+            break;
+        }
+    }
+}
+              // function for one concrete test, other func call
+void Structure_Tests()
+{
+    const int n_test = 9;
+    struct test_Data test_[n_test] = {{{ 0,   0,   0},    {NAN,  NAN},  {1, -1}},
+                                     {{  0,   0,   1},    {NAN,  NAN},  {2,  0}},
+                                     {{  1,   2,  -3},    {  1,   -3},  {3,  2}},
+                                     {{  0,   2,   2},    { -1,  NAN},  {4,  1}},
+                                     {{  1,   1,  10},    {NAN,  NAN},  {5,  0}},
+                                     {{  2,   4,   2},    { -1,  NAN},  {6,  1}},
+                                     {{  5,   1,  -4},    {0.8,   -1},  {7,  2}},
+                                     {{0.5,   1,  -4},    {  2,   -4},  {8,  2}},
+                                     {{ 10,   9,  -1},    {0.1,   -1},  {9,  2}}};
+    int count = 0;
+
+    for(int i = 0; i < 9; i++)
+    {
+        struct s_roots start_roots = {NAN, NAN};
+
+        int roots = Equation_Solver(test_[i].c_data, &start_roots.x_1, &start_roots.x_2);
+
+        if (
+            (Double_Comparison(start_roots.x_1 - test_[i].r_data.x_1) == 1 || (isnan(start_roots.x_1) && isnan(test_[i].r_data.x_1)))&&
+            (Double_Comparison(start_roots.x_2 - test_[i].r_data.x_2) == 1 || (isnan(start_roots.x_2) && isnan(test_[i].r_data.x_2)))&&
+            roots == test_[i].n_data.roots_Right)
+        {
+            printf("TEST %d SUCCESSED (FIRST ROOT - %lg (%lg), SECOND ROOT - %lg (%lg), NUMBER OF ROOTS - %d (%d))\n",
+                    test_[i].n_data.n_test, start_roots.x_1, test_[i].r_data.x_1, start_roots.x_2, test_[i].r_data.x_2, roots, test_[i].n_data.roots_Right);
+            count ++;
+        }
+        else
+        {
+            printf("ERROR TEST %d!!! FIRST ROOT %lg, SECOND ROOT %lg, NUMBER OF ROOTS %d\n"
+                   "EXPECTED FIRST ROOT %lg, SECOND ROOT %lg,NUMBER OF ROOTS %d\n",
+                   test_[i].n_data.n_test, start_roots.x_1, start_roots.x_2, roots, test_[i].r_data.x_1, test_[i].r_data.x_2, test_[i].n_data.roots_Right);
+        }
+    }
+    printf("\n%d TESTS COMPLETE SUCCESSFULLY\n\n", count);
+}
+
+int Double_Comparison(double number)
+{
+    if (fabs(number) < delta)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+void Buffer_Clear()
+{
+    int ch = 0;
+    while ((ch = getchar()) != '\n' && ch != EOF) {}
+}
