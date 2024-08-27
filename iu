@@ -2,109 +2,111 @@
 #include <math.h>
 #include <assert.h>
 
-const double delta = 1e-6;
+const double DELTA = 1e-8;
+const int EOF_NUMBER = 26;
 
-enum n_roots
+enum N_ROOTS
 {
     INFINITE_ROOTS = -1,
     NO_ROOTS = 0,
     ONE_ROOT = 1,
     TWO_ROOTS = 2
 };
-enum enter_variety
+
+enum ENTER_VALUE
 {
     E_TEST = 't',
     E_SOLVER = 's',
     E_QUIT = 'q'
 };
 
-struct s_coef
+struct coefValue
 {
     double a;
     double b;
     double c;
 };
 
-struct for_test
-{
-    int n_test;
-    int roots_Right;       //
-};
-
-struct s_roots
+struct rootsValue
 {
     double x_1;
     double x_2;
+    int n_roots;
 };
 
-struct test_Data
+struct testData
 {
-    s_coef c_data;
-    s_roots r_data;
-    for_test n_data;
-
+    coefValue c_data;
+    rootsValue r_data;
 };
 
-int Equation_Solver(s_coef coef_, s_roots * roots_);
-int Double_Comparison_With_Zero(double number);
-int Quadratic_Solver(s_coef coef, s_roots * roots_);
-int Linear_Solver(double b, double c, double * x_1);
-int Tester(test_Data test);
-int Double_Comparison(double number_1, double number_2);
-void Start_Input();
+int DoubleComparisonWithZero(double number);
+int QuadraticSolver(coefValue coef, rootsValue * roots_data);
+int LinearSolver(double b, double c, double * x_1);
+int Tester(int n_test ,testData test);
+int DoubleComparison(double number_1, double number_2);
+void RootsComparison(double * x_1, double * x_2);
+void MinusZero(double * number);
+void EquationSolver(coefValue coef, rootsValue * roots_data);
+void StartInput();
 void Choice(int enter);
-void Go_Solve();
-void Print_Answer(int roots, double x_1, double x_2);
-void Input_Checker(double * a, double * b, double * c);
-void Structure_Tests();
+void GoSolve();
+void CoefInput(coefValue * coef_data);
+void PrintAnswer(int roots, double x_1, double x_2);
+void StructureTests();
 void Checker();
-void Buffer_Clear();
+void BufferClear();
 
 int main()
 {
-    Start_Input();
-
-    return 0;
+    StartInput();
 }
 
-//========================================================================================================================================================================
-
-// TODO getmode()
-
-void Start_Input()
+void StartInput()
 {
-    printf("WELCOME TO MY SOLVER FOR QUADRATIC(ax^2+bx+c=0) EQUATIONS\n");
+    printf("\x1b[92mWELCOME TO MY SOLVER FOR QUADRATIC(ax^2+bx+c=0) EQUATIONS\x1b[0m\n");
 
     int enter = 0;
 
     while (enter != 'q' && enter != 's' && enter != 't')
     {
-        printf("PRESS t TO DO AUTO TESTS OR s TO ENTER a b c OR q TO QUIT\n");
+        printf("\x1b[93mPRESS t TO DO AUTO TESTS OR s TO ENTER a b c OR q TO QUIT\x1b[0m\n");
 
         enter = getchar();
 
-        if (getchar() != '\n')
+        if (enter != -1)
         {
-            printf("!!!ERROR!!!\nTRY AGAIN\n");
+            if (getchar() != '\n')
+            {
+                printf("\x1b[31mERROR!!! TRY AGAIN\x1b[0m\n");
 
-            Buffer_Clear();
+                BufferClear();
 
-            enter = 0;
+                enter = 0;
+            }
+            else
+            {
+                Choice(enter);
+            }
         }
         else
         {
-            Choice(enter);
+            printf("\x1b[31mERROR!!! TRY AGAIN\x1b[0m\n");
+
+            enter = 0;
         }
     }
 }
 
 void Choice(int enter)
 {
+    assert(isfinite(enter));
+
     switch(enter)
     {
         case E_TEST:
         {
-            Structure_Tests();
+            StructureTests();
             break;
         }
         case E_QUIT:
@@ -113,60 +115,113 @@ void Choice(int enter)
         }
         case E_SOLVER:
         {
-            Go_Solve();
+            GoSolve();
             break;
         }
         default:
         {
-            printf("!!!ERROR!!!\nTRY AGAIN\n");
+            printf("\x1b[31mERROR!!! TRY AGAIN\x1b[0m\n");
         }
     }
 }
-void Go_Solve()
+
+void GoSolve()
 {
-    struct s_coef coef = {0, 0, 0};
-    struct s_roots s_roots = {NAN, NAN};
 
-    printf("ENTER a b c\n");
+    struct coefValue coef_data = {0, 0, 0};
+    struct rootsValue roots_data = {NAN, NAN, 0};
 
-    scanf("%lg %lg %lg", &coef.a, &coef.b, &coef.c);        // TODO check input coef
+    CoefInput(&coef_data);
 
-    int roots = Equation_Solver(coef, &s_roots);
+    EquationSolver(coef_data, &roots_data);
 
-    Print_Answer(roots, s_roots.x_1, s_roots.x_2);
+    MinusZero(&roots_data.x_1);
+    MinusZero(&roots_data.x_2);
+
+    RootsComparison(&roots_data.x_1, &roots_data.x_2);
+
+    PrintAnswer(roots_data.n_roots, roots_data.x_1, roots_data.x_2);
 
 }
-//========================================================================================================================================================================
 
-int Equation_Solver(s_coef coef_, s_roots * roots_)
+void CoefInput(coefValue * coef_data)
 {
-    assert(roots_);
+    assert(coef_data);
 
-    if (Double_Comparison_With_Zero(coef_.a))
+    printf("\x1b[93mENTER IN FORMAT a b c\x1b[0m\n");
+
+    int counter = 0;
+
+    while (counter != 3)
     {
-        return Linear_Solver(coef_.b, coef_.c, &(roots_->x_1));
+        counter = scanf("%lg %lg %lg", &(coef_data -> a), &(coef_data -> b), &(coef_data -> c));
+
+        switch(counter)
+        {
+            case 3:
+            {
+                int ch = 0;
+
+                if ((ch = getchar()) != '\n' && ch != EOF && ch != EOF_NUMBER)
+                {
+                    counter = 0;
+
+                    BufferClear();
+
+                    printf("\x1b[31mERROR!!! TRY AGAIN\x1b[0m\n");
+                }
+                break;
+            }
+            case -1:
+            {
+                printf("\x1b[31mERROR!!! TRY AGAIN\x1b[0m\n");
+
+                break;
+            }
+            default:
+            {
+                BufferClear();
+
+                printf("\x1b[31mERROR!!! TRY AGAIN\x1b[0m\n");
+
+                break;
+            }
+        }
     }
-    else if (Double_Comparison_With_Zero(coef_.c))
+}
+
+void EquationSolver(coefValue coef_data, rootsValue * roots_data)
+{
+    assert(roots_data != 0);
+    assert(isfinite(coef_data.a) == 1);
+    assert(isfinite(coef_data.b) == 1);
+    assert(isfinite(coef_data.c) == 1);
+
+    if (DoubleComparisonWithZero(coef_data.a))
     {
-        roots_ -> x_1 = 0;
-        roots_ -> x_2 = -coef_.b/coef_.a;
-        return TWO_ROOTS;
+        roots_data -> n_roots = LinearSolver(coef_data.b, coef_data.c, &(roots_data->x_1));
+    }
+    else if (DoubleComparisonWithZero(coef_data.c))
+    {
+        roots_data -> x_1 = 0;
+        roots_data -> x_2 = -coef_data.b / coef_data.a;
+        roots_data -> n_roots = TWO_ROOTS;
     }
     else
     {
-        return Quadratic_Solver(coef_, roots_);
+        roots_data -> n_roots = QuadraticSolver(coef_data, roots_data);
     }
-
-    return 0;
 }
 
-int Linear_Solver(double b, double c, double * x_1)
+int LinearSolver(double b, double c, double * x_1)
 {
-    assert(x_1);
+    assert(isfinite(b) == 1);
+    assert(isfinite(c) == 1);
+    assert(x_1 != 0);
 
-    if (Double_Comparison_With_Zero(b))
+    if (DoubleComparisonWithZero(b))
     {
-        if (Double_Comparison_With_Zero(c))
+        if (DoubleComparisonWithZero(c))
         {
             return INFINITE_ROOTS;
         }
@@ -185,125 +240,131 @@ int Linear_Solver(double b, double c, double * x_1)
     return 0;
 }
 
-// TODO c == 0
-
-int Quadratic_Solver(s_coef coef, s_roots * roots_)
+int QuadraticSolver(coefValue coef_data, rootsValue * roots_data)
 {
-    assert(roots_);
-    double Discriminant = coef.b*coef.b - 4*coef.a*coef.c;
+    assert(roots_data);
+    assert(isfinite(coef_data.a) == 1);
+    assert(isfinite(coef_data.b) == 1);
+    assert(isfinite(coef_data.c) == 1);
 
-    if (Discriminant < -delta)
+    double Discriminant = coef_data.b * coef_data.b - 4 * coef_data.a * coef_data.c;
+
+    if (Discriminant < -DELTA)
     {
         return NO_ROOTS;
     }
-    else if (Double_Comparison_With_Zero(Discriminant))
+    else if (DoubleComparisonWithZero(Discriminant))
     {
-        roots_ -> x_1 = -coef.b / (2 * coef.a);
+        roots_data -> x_1 = -coef_data.b / (2 * coef_data.a);
         return ONE_ROOT;
     }
     else
     {
-        roots_ -> x_1 = (-coef.b + sqrt(Discriminant)) / (2 * coef.a);
-        roots_ -> x_2 = (-coef.b - sqrt(Discriminant)) / (2 * coef.a);
+        roots_data -> x_1 = (-coef_data.b + sqrt(Discriminant)) / (2 * coef_data.a);
+        roots_data -> x_2 = (-coef_data.b - sqrt(Discriminant)) / (2 * coef_data.a);
         return TWO_ROOTS;
     }
     return 0;
 }
 
-//==============================================================================================================================================================================
-
-// rename func name
-
-void Print_Answer(int roots, double x_1, double x_2)
+void PrintAnswer(int roots, double x_1, double x_2)
 {
     switch(roots)
     {
         case NO_ROOTS:
         {
-            printf("NO ROOTS");
+            printf("\x1b[93mNO ROOTS\x1b[0m");
             break;
         }
         case ONE_ROOT:
         {
-            printf("ONE ROOT. ROOT %lg", x_1);
+            printf("\x1b[93mONE ROOT. x = %lg\x1b[0m", x_1);
             break;
         }
         case TWO_ROOTS:
         {
-            printf("TWO ROOTS. FIRST ROOT %lg, SECOND ROOT %lg", x_1, x_2);
+            printf("\x1b[93mTWO ROOTS. x1 = %lg, x2 = %lg\x1b[0m", x_1, x_2);
             break;
         }
         case INFINITE_ROOTS:
         {
-            printf("AN INFINITE NUMBER OF ROOTS");
+            printf("\x1b[93mAN INFINITE NUMBER OF ROOTS\x1b[0m");
             break;
         }
         default:
         {
-            printf("ERROR!!! UNKNOWN NUMBER OF ROOTS");
+            printf("\x1b[31mERROR!!! UNKNOWN NUMBER OF ROOTS\x1b[0m");
             break;
         }
     }
 }
-              // function for one concrete test, other func call
-void Structure_Tests()
+
+void StructureTests()
 {
-    const int n_test = 10;
-    struct test_Data test[n_test] = {{{ 0,   0,   0},    {NAN,  NAN},  {1, -1}},
-                                     {{  0,   0,   1},    {NAN,  NAN},  {2,  0}},
-                                     {{  1,   2,  -3},    {  1,   -3},  {3,  2}},
-                                     {{  0,   2,   2},    { -1,  NAN},  {4,  1}},
-                                     {{  1,   1,  10},    {NAN,  NAN},  {5,  0}},
-                                     {{  2,   4,   2},    { -1,  NAN},  {6,  1}},
-                                     {{  5,   1,  -4},    {0.8,   -1},  {7,  2}},
-                                     {{0.5,   1,  -4},    {  2,   -4},  {8,  2}},
-                                     {{1.5,   9,   0},    {  0,   -6},  {9,  2}},
-                                     {{ 10,   9,  -1},    {0.1,   -1},  {10,  2}}};
+    const int n_test = 11;
+                                  //{{  a,   b,   c}, {x_1,  x_2, n_roots}}
+    struct testData test[n_test] = {{{  0,   0,   0}, {NAN,  NAN,      -1}},
+                                    {{  1,   0,   0}, {NAN,  NAN,       0}},
+                                    {{  1,   2,  -3}, {  1,   -3,       2}},
+                                    {{  0,   2,   2}, { -1,  NAN,       1}},
+                                    {{  1,   1,  10}, {NAN,  NAN,       0}},
+                                    {{  2,   4,   2}, { -1,  NAN,       1}},
+                                    {{  5,   1,  -4}, {0.8,   -1,       2}},
+                                    {{0.5,   1,  -4}, {  2,   -4,       2}},
+                                    {{1.5,   9,   0}, {  0,   -6,       2}},
+                                    {{ 10,   9,  -1}, {0.1,   -1,       2}},
+                                    {{  4,  -2,   0}, {0.5,    0,       2}}};
     int count = 0;
 
     for(int i = 0; i < n_test; i++)
     {
-        if (Tester(test[i]))
+        if (Tester(i, test[i]))
             count++;
     }
-    printf("\n%d TESTS COMPLETE SUCCESSFULLY\n\n", count);
+    printf("\x1b[93m==============================\x1b[0m\n");
+    printf("\x1b[93m%d TESTS COMPLETE SUCCESSFULLY\x1b[0m\n", count);
+    printf("\x1b[93m==============================\x1b[0m\n");
 }
 
-int Tester(test_Data test)
+int Tester(int n_test, testData test)
 {
-    struct s_roots start_roots = {NAN, NAN};
+    struct rootsValue roots_data = {NAN, NAN, 0};
 
-    int roots = Equation_Solver(test.c_data, &start_roots);
+    EquationSolver(test.c_data, &roots_data);
 
-    if ((Double_Comparison(start_roots.x_1, test.r_data.x_1) == 1 || (isnan(start_roots.x_1) && isnan(test.r_data.x_1)))&&
-        (Double_Comparison(start_roots.x_2, test.r_data.x_2) == 1 || (isnan(start_roots.x_2) && isnan(test.r_data.x_2)))&&
-        roots == test.n_data.roots_Right)
+    MinusZero(&roots_data.x_1);
+    MinusZero(&roots_data.x_2);
+
+    RootsComparison(&roots_data.x_1, &roots_data.x_2);
+
+    if ((DoubleComparison(roots_data.x_1, test.r_data.x_1) == 1 || (isnan(roots_data.x_1) && isnan(test.r_data.x_1)))&&
+        (DoubleComparison(roots_data.x_2, test.r_data.x_2) == 1 || (isnan(roots_data.x_2) && isnan(test.r_data.x_2)))&&
+        roots_data.n_roots == test.r_data.n_roots)
     {
-        printf("TEST %d SUCCESSED (FIRST ROOT - %lg (%lg), SECOND ROOT - %lg (%lg), NUMBER OF ROOTS - %d (%d))\n",
-                test.n_data.n_test, start_roots.x_1, test.r_data.x_1, start_roots.x_2, test.r_data.x_2, roots, test.n_data.roots_Right);
+        printf("\x1b[92mTEST %d SUCCESSED (x1 = %lg (%lg), x2 = %lg (%lg), NUMBER OF ROOTS = %d (%d))\x1b[0m\n",
+                n_test+1, roots_data.x_1, test.r_data.x_1, roots_data.x_2, test.r_data.x_2, roots_data.n_roots, test.r_data.n_roots);
         return 1;
     }
     else
     {
-        printf("ERROR TEST %d!!! FIRST ROOT %lg, SECOND ROOT %lg, NUMBER OF ROOTS %d\n"
-               "EXPECTED FIRST ROOT %lg, SECOND ROOT %lg,NUMBER OF ROOTS %d\n",
-                test.n_data.n_test, start_roots.x_1, start_roots.x_2, roots, test.r_data.x_1, test.r_data.x_2, test.n_data.roots_Right);
-    }
+        printf("\x1b[31mTEST %d FAILED (x1 = %lg (%lg), x2 = %lg (%lg), NUMBER OF ROOTS = %d (%d))\x1b[0m\n",
+                n_test+1, roots_data.x_1, test.r_data.x_1, roots_data.x_2, test.r_data.x_2, roots_data.n_roots, test.r_data.n_roots);
+            }
     return 0;
 }
 
-int Double_Comparison_With_Zero(double number)
+int DoubleComparisonWithZero(double number)
 {
-    if (fabs(number) < delta)
+    if (fabs(number) < DELTA)
     {
         return 1;
     }
     return 0;
 }
 
-int Double_Comparison(double number_1, double number_2)
+int DoubleComparison(double number_1, double number_2)
 {
-    if (Double_Comparison_With_Zero(number_1 - number_2))
+    if (DoubleComparisonWithZero(number_1 - number_2))
     {
         return 1;
     }
@@ -311,8 +372,34 @@ int Double_Comparison(double number_1, double number_2)
     return 0;
 }
 
-void Buffer_Clear()
+void MinusZero(double * number)
+{
+    assert(number);
+
+    if (DoubleComparisonWithZero(*number))
+    {
+        * number = 0;
+    }
+}
+
+void RootsComparison(double * x_1, double * x_2)
+{
+    assert(x_1);
+    assert(x_2);
+    assert(x_1 != x_2);
+
+    double roots_swaper = 0;
+
+    if ((*x_1 - *x_2) < -DELTA)
+    {
+        roots_swaper = * x_1;
+        * x_1 = * x_2;
+        * x_2 = roots_swaper;
+    }
+}
+
+void BufferClear()
 {
     int ch = 0;
-    while ((ch = getchar()) != '\n' && ch != EOF) {}
+    while ((ch = getchar()) != '\n' && ch != EOF && ch != EOF_NUMBER) {}
 }
